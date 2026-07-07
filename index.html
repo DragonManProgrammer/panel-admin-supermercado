@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin · Supermercado Alonso Berman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0D2B3E;
+    --ink-2:#123A52;
+    --cream:#F6F2EA;
+    --paper:#FFFFFF;
+    --red:#C81E3A;
+    --red-tint:#FBE7EA;
+    --green:#3F7A5C;
+    --green-tint:#E7F0EA;
+    --gold:#C98A2E;
+    --gold-tint:#FBF0DD;
+    --slate:#3B4650;
+    --slate-soft:#7C8892;
+    --line:#E4DFD3;
+    --radius:14px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    font-family:'Inter', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  ::selection{ background:var(--gold); color:#fff; }
+
+  .num, .money{
+    font-family:'Space Mono', monospace;
+    font-variant-numeric:tabular-nums;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  /* ---------- LAYOUT ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns:250px 1fr;
+    min-height:100vh;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    background:linear-gradient(180deg, var(--ink) 0%, #08202E 100%);
+    color:#EAF1F4;
+    padding:28px 22px;
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:0;
+    height:100vh;
+  }
+
+  .brand{ margin-bottom:38px; }
+  .brand .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:#82A9BC;
+    text-transform:uppercase;
+    display:block;
+    margin-bottom:6px;
+  }
+  .brand h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    line-height:1.15;
+    color:#fff;
+  }
+  .brand h1 span{ color:#7FC29B; font-style:italic; }
+
+  nav{ display:flex; flex-direction:column; gap:4px; flex:1; }
+  nav a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 14px;
+    border-radius:10px;
+    font-size:14.5px;
+    font-weight:500;
+    color:#BBD0DC;
+    transition:background .15s ease, color .15s ease;
+  }
+  nav a .ico{ width:18px; text-align:center; opacity:.9; }
+  nav a:hover{ background:rgba(255,255,255,.06); color:#fff; }
+  nav a.active{
+    background:#123A52;
+    color:#fff;
+    box-shadow:inset 3px 0 0 var(--gold);
+  }
+
+  .side-foot{
+    margin-top:auto;
+    padding-top:20px;
+  }
+  .barcode{
+    height:34px;
+    background:repeating-linear-gradient(90deg,#DCE6EA 0 2px, transparent 2px 5px, #DCE6EA 5px 7px, transparent 7px 11px, #DCE6EA 11px 12px, transparent 12px 16px);
+    opacity:.35;
+    border-radius:3px;
+    margin-bottom:10px;
+  }
+  .side-foot .admin{
+    display:flex; align-items:center; gap:10px;
+    font-size:12.5px; color:#9FB7C4;
+  }
+  .avatar{
+    width:30px; height:30px; border-radius:50%;
+    background:linear-gradient(135deg,#7FC29B,#3F7A5C);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:12px;
+    font-family:'Fraunces', serif;
+  }
+
+  /* ---------- MAIN ---------- */
+  main{ padding:32px 40px 60px; max-width:1320px; }
+
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:30px;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .topbar h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:30px;
+    color:var(--ink);
+  }
+  .topbar p{
+    color:var(--slate-soft);
+    font-size:14px;
+    margin-top:4px;
+  }
+  .date-pill{
+    font-family:'Space Mono', monospace;
+    font-size:12.5px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    padding:9px 16px;
+    border-radius:999px;
+    color:var(--slate);
+  }
+
+  /* ---------- KPI TICKETS ---------- */
+  .kpi-row{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+    margin-bottom:30px;
+  }
+  .ticket{
+    background:var(--paper);
+    border-radius:10px;
+    padding:20px 20px 18px;
+    position:relative;
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .ticket::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0; height:4px;
+    background:repeating-linear-gradient(90deg, var(--accent,var(--gold)) 0 8px, transparent 8px 14px);
+  }
+  .ticket .label{
+    font-size:11.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--slate-soft);
+    font-weight:600;
+    margin-bottom:10px;
+    display:block;
+  }
+  .ticket .value{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .ticket .value small{ font-size:15px; font-family:'Space Mono',monospace; font-weight:400; color:var(--slate-soft); }
+  .ticket .delta{
+    margin-top:9px;
+    font-size:12.5px;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+  .delta.up{ color:var(--green); }
+  .delta.down{ color:var(--red); }
+  .ticket--ink{ background:var(--ink); color:#fff; }
+  .ticket--ink .label{ color:#8FB2C4; }
+  .ticket--ink .value{ color:#fff; }
+
+  /* ---------- CHART GRID ---------- */
+  .chart-grid{
+    display:grid;
+    grid-template-columns:1.65fr 1fr;
+    gap:18px;
+    margin-bottom:30px;
+  }
+  .panel{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px 18px;
+  }
+  .panel-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:14px;
+  }
+  .panel-head h3{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:18px;
+  }
+  .panel-head span{
+    font-size:12px;
+    color:var(--slate-soft);
+    font-family:'Space Mono', monospace;
+  }
+  .chart-wrap{ position:relative; }
+
+  /* ---------- TABLES ---------- */
+  .table-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+  }
+  .table-panel h3{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .tag{
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:.05em;
+    padding:3px 9px;
+    border-radius:999px;
+    font-weight:700;
+  }
+  .tag.top{ background:var(--green-tint); color:var(--green); }
+  .tag.low{ background:var(--red-tint); color:var(--red); }
+
+  table{ width:100%; border-collapse:collapse; margin-top:6px; }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--slate-soft);
+    font-weight:600;
+    padding:8px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  thead th.num-col{ text-align:right; }
+  tbody td{
+    padding:11px 6px;
+    font-size:13.5px;
+    border-bottom:1px solid #F1EDE3;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody td.num-col{ text-align:right; font-family:'Space Mono', monospace; }
+  .prod-name{ font-weight:600; color:var(--ink); }
+  .prod-cat{ display:block; font-size:11px; color:var(--slate-soft); font-weight:400; margin-top:1px; }
+
+  .rank{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:22px; height:22px;
+    border-radius:6px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    font-weight:700;
+    margin-right:8px;
+  }
+  .rank.top{ background:var(--green); color:#fff; }
+  .rank.low{ background:var(--red); color:#fff; }
+
+  /* price-tag badge, the signature element */
+  .price-tag{
+    position:relative;
+    display:inline-block;
+    background:var(--gold-tint);
+    color:#8A5B15;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    font-weight:700;
+    padding:4px 10px 4px 16px;
+    border-radius:0 4px 4px 0;
+    clip-path:polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
+  }
+  .price-tag::after{
+    content:"";
+    position:absolute;
+    left:5px; top:50%;
+    width:3px; height:3px;
+    background:#8A5B15;
+    border-radius:50%;
+    transform:translateY(-50%);
+    opacity:.55;
+  }
+
+  footer{
+    margin-top:38px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-size:12px;
+    color:var(--slate-soft);
+    display:flex;
+    justify-content:space-between;
+  }
+
+  @media (max-width: 1080px){
+    .shell{ grid-template-columns:1fr; }
+    .sidebar{ position:relative; height:auto; }
+    .kpi-row{ grid-template-columns:repeat(2,1fr); }
+    .chart-grid, .table-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="eyebrow">Panel administrativo</span>
+      <h1>Alonso<br><span>Berman</span></h1>
+    </div>
+
+    <nav>
+      <a href="#" class="active"><span class="ico">▣</span> Resumen</a>
+      <a href="#"><span class="ico">₡</span> Ganancias</a>
+      <a href="#"><span class="ico">▤</span> Productos</a>
+      <a href="#"><span class="ico">◐</span> Categorías</a>
+      <a href="#"><span class="ico">▥</span> Inventario</a>
+      <a href="#"><span class="ico">⚙</span> Configuración</a>
+    </nav>
+
+    <div class="side-foot">
+      <div class="barcode"></div>
+      <div class="admin">
+        <div class="avatar">AB</div>
+        <div>
+          <div style="color:#fff; font-weight:600;">Administrador</div>
+          <div>Sesión activa</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main>
+
+    <div class="topbar">
+      <div>
+        <h2>Resumen de ventas</h2>
+        <p>Supermercado Alonso Berman — temporada navideña</p>
+      </div>
+      <div class="date-pill">01 NOV — 07 DIC 2026</div>
+    </div>
+
+    <!-- KPI tickets -->
+    <section class="kpi-row">
+      <div class="ticket ticket--ink">
+        <span class="label">Ingresos totales</span>
+        <div class="value money">₡14.116.610</div>
+        <span class="delta up">▲ productos destacados</span>
+      </div>
+      <div class="ticket">
+        <span class="label">Unidades vendidas</span>
+        <div class="value num">959 <small>uds</small></div>
+        <span class="delta up">▲ top 10 productos</span>
+      </div>
+      <div class="ticket">
+        <span class="label">Precio promedio</span>
+        <div class="value money">₡9.330</div>
+        <span class="delta down">▼ vs. mes anterior</span>
+      </div>
+      <div class="ticket" style="--accent:var(--green)">
+        <span class="label">Producto estrella</span>
+        <div class="value" style="font-size:18px; line-height:1.3;">Árbol de Navidad<br>artificial 1.8m</div>
+        <span class="delta up">▲ 210 unidades</span>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="chart-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Ventas por producto</h3>
+          <span>unidades vendidas</span>
+        </div>
+        <div class="chart-wrap" style="height:320px;">
+          <canvas id="chartVentas"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Ingresos por categoría</h3>
+          <span>colones ₡</span>
+        </div>
+        <div class="chart-wrap" style="height:320px;">
+          <canvas id="chartCategorias"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tables -->
+    <section class="table-grid">
+      <div class="panel table-panel">
+        <div class="panel-head">
+          <h3>Top 5 más vendidos <span class="tag top">ALTA ROTACIÓN</span></h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="num-col">Precio</th>
+              <th class="num-col">Uds.</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-top"></tbody>
+        </table>
+      </div>
+
+      <div class="panel table-panel">
+        <div class="panel-head">
+          <h3>Top 5 menos vendidos <span class="tag low">BAJA ROTACIÓN</span></h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="num-col">Precio</th>
+              <th class="num-col">Uds.</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-low"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <span>© 2026 Supermercado Alonso Berman — Panel interno de administración</span>
+      <span>Datos actualizados: 07 jul 2026, 09:14 a.m.</span>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+/* ============ DATASET ============ */
+const masVendidos = [
+  { nombre:"Árbol de Navidad artificial 1.8m", cat:"Decoración", precio:45990, uds:210 },
+  { nombre:"Luces LED navideñas 10m",           cat:"Decoración", precio:8990,  uds:195 },
+  { nombre:"Turrón de chocolate 300g",          cat:"Alimentos",  precio:3490,  uds:180 },
+  { nombre:"Adornos navideños (set x12)",       cat:"Decoración", precio:6990,  uds:165 },
+  { nombre:"Pan dulce navideño 900g",           cat:"Alimentos",  precio:4290,  uds:150 },
+];
+
+const menosVendidos = [
+  { nombre:"Vela aromática canela",     cat:"Hogar",      precio:2990, uds:8  },
+  { nombre:"Guantes térmicos",          cat:"Accesorios", precio:5990, uds:10 },
+  { nombre:"Portavelas de cerámica",    cat:"Hogar",      precio:4590, uds:12 },
+  { nombre:"Calendario de adviento",    cat:"Decoración", precio:7990, uds:14 },
+  { nombre:"Papel de regalo",           cat:"Papelería",  precio:1990, uds:15 },
+];
+
+const fmtCRC = n => "₡" + n.toLocaleString("es-CR");
+
+/* ============ RENDER TABLES ============ */
+function renderTable(id, data, kind){
+  const body = document.getElementById(id);
+  body.innerHTML = data.map((p,i) => `
+    <tr>
+      <td>
+        <span class="rank ${kind}">${i+1}</span>
+        <span class="prod-name">${p.nombre}
+          <span class="prod-cat">${p.cat}</span>
+        </span>
+      </td>
+      <td class="num-col">${fmtCRC(p.precio)}</td>
+      <td class="num-col">
+        <span class="price-tag">${p.uds}</span>
+      </td>
+    </tr>
+  `).join("");
+}
+renderTable("tbl-top", masVendidos, "top");
+renderTable("tbl-low", menosVendidos, "low");
+
+/* ============ CHART: VENTAS POR PRODUCTO ============ */
+const ctx1 = document.getElementById('chartVentas').getContext('2d');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: masVendidos.map(p => p.nombre),
+    datasets: [{
+      label: 'Unidades vendidas',
+      data: masVendidos.map(p => p.uds),
+      backgroundColor: '#0D2B3E',
+      borderRadius: 5,
+      barThickness: 26,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display:false },
+      tooltip: {
+        backgroundColor:'#0D2B3E',
+        titleFont:{ family:"'Inter', sans-serif", weight:600 },
+        bodyFont:{ family:"'Space Mono', monospace" },
+        callbacks:{
+          label: (c) => `${c.raw} uds · ${fmtCRC(masVendidos[c.dataIndex].precio)}`
+        }
+      }
+    },
+    scales: {
+      x: { grid:{ color:'#EDE8DB' }, ticks:{ font:{ family:"'Space Mono', monospace", size:11 } } },
+      y: { grid:{ display:false }, ticks:{ font:{ family:"'Inter', sans-serif", size:12 }, color:'#3B4650' } }
+    }
+  }
+});
+
+/* ============ CHART: INGRESOS POR CATEGORÍA ============ */
+const todos = [...masVendidos, ...menosVendidos];
+const categorias = {};
+todos.forEach(p => {
+  const total = p.precio * p.uds;
+  categorias[p.cat] = (categorias[p.cat] || 0) + total;
+});
+
+const ctx2 = document.getElementById('chartCategorias').getContext('2d');
+new Chart(ctx2, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(categorias),
+    datasets: [{
+      data: Object.values(categorias),
+      backgroundColor: ['#0D2B3E', '#3F7A5C', '#C98A2E', '#C81E3A', '#7C8892'],
+      borderColor: '#fff',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { boxWidth:10, boxHeight:10, usePointStyle:true, pointStyle:'circle', font:{ family:"'Inter', sans-serif", size:11.5 } }
+      },
+      tooltip: {
+        backgroundColor:'#0D2B3E',
+        bodyFont:{ family:"'Space Mono', monospace" },
+        callbacks:{ label: (c) => `${c.label}: ${fmtCRC(c.raw)}` }
+      }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
